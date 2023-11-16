@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using NuGet.Protocol.Plugins;
 using StudentGradeManagementSystem.Data;
 using StudentGradeManagementSystem.Models;
 
@@ -16,10 +17,79 @@ namespace StudentGradeManagementSystem.Controllers
     {
         private readonly ApplicationDbContext _context;
 
+        public string Password { get; private set; }
+
         public StudentsController(ApplicationDbContext context)
         {
             _context = context;
         }
+
+        // GET: Students/Register
+        public IActionResult Register()
+        {
+            return View();
+        }
+
+        // GET: Students/Login
+        public IActionResult Login()
+        {
+            return View();
+        }
+
+        // POST: Students/Login
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Login(LoginViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                // Check if the student exists based on the provided credentials
+                var student = await _context.Students
+                    .FirstOrDefaultAsync(s => s.Email == model.Email && Password == model.Password);
+
+                if (student != null)
+                {
+                    // Implement authentication logic (e.g., using ASP.NET Core Identity)
+                    // Sign in the student and redirect to the dashboard or another protected page
+                    // Example using ASP.NET Core Identity:
+                    // await _signInManager.SignInAsync(student, isPersistent: false);
+
+                    return RedirectToAction("Dashboard", "Home"); // Redirect to the dashboard after login
+                }
+
+                // If authentication fails, add a ModelState error
+                ModelState.AddModelError(string.Empty, "Invalid login attempt");
+            }
+
+            return View(model);
+        }
+
+
+        // POST: Students/Register
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(RegisterViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                // Map the view model to your Students model
+                var student = new Students
+                {
+                    StudentName = model.StudentName,
+                    Email = model.Email,
+                    // Add any other properties you want to capture during registration
+                };
+
+                _context.Students.Add(student);
+                await _context.SaveChangesAsync();
+
+                // Redirect to login page after successful registration
+                return RedirectToAction(nameof(Login));
+            }
+
+            return View(model);
+        }
+
 
         // GET: Students
         public async Task<IActionResult> Index()
